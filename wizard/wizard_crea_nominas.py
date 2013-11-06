@@ -27,7 +27,6 @@ from osv import osv, fields
 from tools.translate import _
 import time
 import datetime
-import pooler
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
@@ -71,7 +70,6 @@ class wizard_crea_nominas(osv.osv_memory):
     
     def cerrar(self, cr, uid, ids, context): 
         return {'type': 'ir.actions.act_window_close'}        
-wizard_crea_nominas()
 
 
 class wizard_crea_extras(osv.osv_memory):
@@ -81,7 +79,7 @@ class wizard_crea_extras(osv.osv_memory):
     
     _columns={
             #'employee_ids':{'string': 'Empleados', 'type': 'many2many', 'relation': 'hr.employee', 'required': True},
-            'employee_ids':fields.many2many('hr.employee','rel_nominas_trabajadores','nomina_id','employee_id'),
+            'employee_ids':fields.many2many('hr.employee','rel_extras_trabajadores','nomina_id','employee_id'),
             'fecha': fields.date('Fecha Nómina',required= True),
               }
     
@@ -111,13 +109,13 @@ class wizard_crea_extras(osv.osv_memory):
                   'irpf': empleado.irpf_extra, 
                   'extra': True
                   }
+            pdb.set_trace()
             extras = self.pool.get('hr.nomina').create(cr, uid, val)
         return {'type': 'ir.actions.act_window_close'} 
     
     def cerrar(self, cr, uid, ids, context): 
         return {'type': 'ir.actions.act_window_close'}  
                                    
-wizard_crea_extras()
 
 class wizard_crea_anticipos(osv.osv_memory):
     
@@ -125,7 +123,7 @@ class wizard_crea_anticipos(osv.osv_memory):
     _description = ''
     
     _columns ={
-            'employee_ids':fields.many2many('hr.employee','rel_nominas_trabajadores','nomina_id','employee_id'),
+            'employee_ids':fields.many2many('hr.employee','rel_anticipos_trabajadores','nomina_id','employee_id'),
             'fecha': fields.date('Fecha Anticipo',required = True),
             'cantidad':fields.float('Cantidad Anticipo', required = True),
             }
@@ -140,7 +138,7 @@ class wizard_crea_anticipos(osv.osv_memory):
         nominas_obj = self.pool.get ('hr.employee')
         anticipos_obj = self.pool.get ('hr.anticipo')
         #########################################################################
-        pool = pooler.get_pool(cr.dbname)
+        #pool = pooler.get_pool(cr.dbname)
         for wiz in self.browse(cr, uid, ids, context):
             fecha = wiz.fecha
             cantidad = wiz.cantidad
@@ -159,4 +157,3 @@ class wizard_crea_anticipos(osv.osv_memory):
     def cerrar(self, cr, uid, ids, context): 
         return {'type': 'ir.actions.act_window_close'} 
      
-wizard_crea_anticipos()
