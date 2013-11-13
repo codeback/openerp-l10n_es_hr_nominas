@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_l10n_es_hr_nominas_nomina,access_l10n_es_hr_nominas_nomina,model_hr_nomina,base.group_hr_manager,1,1,1,1
+access_l10n_es_hr_nominas_anticipo,access_l10n_es_hr_nominas_anticipo,model_hr_anticipo,base.group_hr_manager,1,1,1,1
+access_l10n_es_hr_nominas_empleado,access_l10n_es_hr_nominas_empleado,model_hr_employee,base.group_hr_manager,1,1,1,1
+access_l10n_es_hr_nominas_nomina_empleado,access_l10n_es_hr_nominas_nomina_empleado,model_hr_nomina,base.group_user,0,0,0,0
+access_l10n_es_hr_nominas_anticipo_empleado,access_l10n_es_hr_nominas_anticipo_empleado,model_hr_anticipo,base.group_user,0,0,0,0
+access_l10n_es_hr_nominas_empleado_empleado,access_l10n_es_hr_nominas_empleado_empleado,model_hr_employee,base.group_user,0,0,0,0
+
+
