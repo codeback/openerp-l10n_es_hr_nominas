@@ -43,6 +43,7 @@ class res_company(osv.osv):
         'cuenta_hacienda_publica': fields.many2one('account.account', 'Cuenta H.P acreedor por retenciones practicadas', required=True),
         'cuenta_pendientes_pago': fields.many2one('account.account', 'Cuenta Remuneraciones pendientes de pago', required=True),
         'cuenta_bancos': fields.many2one('account.account', 'Cuenta Bancos e instituciones de crédito', required=True),
+        'cuenta_caja': fields.many2one('account.account', 'Cuenta Caja', required=True),
         'cuenta_anticipos': fields.many2one('account.account', 'Cuenta anticipos de remuneraciones', required=True),
             }
 
@@ -70,6 +71,7 @@ def get_configuration(cr, uid, ids, context=None):
         res['cuenta_hacienda_publica'] = obj_company.cuenta_hacienda_publica.id
         res['cuenta_pendientes_pago'] = obj_company.cuenta_pendientes_pago.id
         res['cuenta_bancos'] = obj_company.cuenta_bancos.id
+        res['cuenta_caja'] = obj_company.cuenta_caja.id
         res['cuenta_anticipos'] = obj_company.cuenta_anticipos.id            
         return res
     else:
@@ -91,6 +93,8 @@ class hr_employee(osv.osv):
       'nominas_ids': fields.one2many('hr.nomina', 'employee_id', 'Nóminas del Empleado', readonly=True),
       'anticipos_ids': fields.one2many('hr.anticipo', 'employee_id', 'Anticipos del Empleado', readonly=True),
       'cuenta_id': fields.many2one('account.account', 'Cuenta', required=True, help="El empleado debe tener una cuenta para su nómina."),
+      'metodo_pago': fields.selection((('banco', 'Banco'),                                  
+                                  ('caja', 'Caja')), 'Método de pago', readonly=False, select="1"),
     }
     _defaults = {
         'cuenta_id': lambda * a: 377 or None,
@@ -117,6 +121,7 @@ class hr_nomina(osv.osv):
        'extra': fields.boolean('Paga Extra'),
        'asiento_nomina_confirmada': fields.many2one('account.move', 'Asiento Nómina confirmada', readonly=True),
        'asiento_nomina_pagada': fields.many2one('account.move', 'Asiento Nómina pagada', readonly=True),
+       
     }
 
     _defaults = {
@@ -308,19 +313,37 @@ class hr_nomina(osv.osv):
             retencion_irpf = (nom.retribucion_bruta * nom.irpf) / 100
             sueldo_neto = nom.retribucion_bruta - retencion_irpf - nom.ss_trabajador
             anticipo = self.comprueba_anticipo(cr, uid, ids, fechaNomina, nom.employee_id.id)
+            pdb.set_trace()
             if anticipo and nom.extra == False:
                 sueldo_neto -= anticipo
+
                 
-            cuenta_banco = {
-                   'account_id': cuentas['cuenta_bancos'], 
-                   'move_id': move_id, 
-                   'journal_id': journal_id, 
-                   'period_id': periodo_id, 
-                   'name': 'Banco', 
-                   'credit': sueldo_neto, 
-                   'ref': referencia,
-                   }
-            account_move_line_obj.create(cr, uid, cuenta_banco)
+            if nom.employee_id.metodo_pago == "banco":
+            
+                cuenta_banco = {
+                       'account_id': cuentas['cuenta_bancos'], 
+                       'move_id': move_id, 
+                       'journal_id': journal_id, 
+                       'period_id': periodo_id, 
+                       'name': 'Banco', 
+                       'credit': sueldo_neto, 
+                       'ref': referencia,
+                       }
+                account_move_line_obj.create(cr, uid, cuenta_banco)
+
+            else:
+
+                cuenta_caja = {
+                       'account_id': cuentas['cuenta_caja'], 
+                       'move_id': move_id, 
+                       'journal_id': journal_id, 
+                       'period_id': periodo_id, 
+                       'name': 'Caja', 
+                       'credit': sueldo_neto, 
+                       'ref': referencia,
+                       }
+                account_move_line_obj.create(cr, uid, cuenta_caja)
+
             
             cuenta_pendiente = {
                               'account_id': cuentas['cuenta_pendientes_pago'], 

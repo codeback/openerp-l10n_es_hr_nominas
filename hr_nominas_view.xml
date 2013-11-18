@@ -17,6 +17,7 @@
 									<field name="irpf"/>
 									<field name="ss_empresa"/>
 									<field name="ss_trabajador"/>
+									<field name="metodo_pago"/>									
 								</group>
 							</page>
 							<page string="Pagas Extra">
@@ -25,6 +26,7 @@
 									<field name="irpf_extra"/>
 									<field name="ss_empresa_extra"/>
 									<field name="ss_trabajador_extra"/>
+									<field name="metodo_pago"/>
 								</group>
 							</page>
 						</notebook>
@@ -210,6 +212,7 @@
 						<field name="cuenta_hacienda_publica"/>
 						<field name="cuenta_pendientes_pago"/>
 						<field name="cuenta_bancos"/>
+						<field name="cuenta_caja"/>
 						<field name="cuenta_anticipos"/>
 					</group>
 				</page>
