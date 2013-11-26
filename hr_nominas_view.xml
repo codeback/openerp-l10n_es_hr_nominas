@@ -26,7 +26,6 @@
 									<field name="irpf_extra"/>
 									<field name="ss_empresa_extra"/>
 									<field name="ss_trabajador_extra"/>
-									<field name="metodo_pago"/>
 								</group>
 							</page>
 						</notebook>
@@ -85,7 +84,49 @@
 				</tree>
 			</field>
 		</record>
-
+	
+        <record model="ir.ui.view" id="paga_nominas_form_view">
+		    <field name="name">paga.nominas.form.view</field>
+		    <field name="model">hr.nomina</field>
+		    <field name="arch" type="xml">
+		        <form string="Payment" version="7.0">
+		            <group>
+		                <group>
+		                    <field name="state"/>
+		                    <field name="employee_id" required="1" string="Customer" /> 
+		                    <field name="retribucion_bruta" class="oe_inline"
+		                        string="Amount to pay"
+		                        widget='monetary'
+		                        readonly="1" />
+		                    <field name="cantidad_pagada" widget="monetary" readonly="1" />
+		                    <field name="pago" widget="monetary" />
+		                    <field name="metodo_pago"/>
+		                </group>
+		                
+		                <group>
+		                    <field name="fecha_nomina"/>
+		                    <field name="numero"/>                    
+		                </group>
+		            </group>            
+		            
+		            <footer>
+		                <button name="pagar_nomina" string="Pay" class="oe_highlight" type="object"/> or
+		                <button string="Cancel" class="oe_link" special="cancel"/>
+		            </footer>
+		        </form>
+		    </field>
+		</record>                 
+     	
+		<record id="act_paga_nominas" model="ir.actions.act_window">
+			<field name="name">Pagar Nóminas</field>
+			<field name="type">ir.actions.act_window</field>
+			<field name="view_id" ref="paga_nominas_form_view"/>
+			<field name="res_model">hr.nomina</field>
+			<field name="view_type">form</field>
+			<field name="view_mode">form</field>
+			<field name="target">new</field>
+		</record>	
+			
 		<record id="view_nomina_search" model="ir.ui.view">
 			<field name="name">hr.nomina.search</field>
 			<field name="model">hr.nomina</field>
@@ -226,6 +267,9 @@
 
 		<!--Anticipos-->
 		<menuitem id="menu_ver_anticipos" parent="menu_nomina" action="view_anticipo_action"/>
+
+		<!--Pagos-->
+		<menuitem id="menu_paga_nominas" parent="menu_nomina" action="act_paga_nominas"/>
 
 	</data>
 </openerp>

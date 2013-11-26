@@ -93,8 +93,7 @@ class hr_employee(osv.osv):
       'nominas_ids': fields.one2many('hr.nomina', 'employee_id', 'Nóminas del Empleado', readonly=True),
       'anticipos_ids': fields.one2many('hr.anticipo', 'employee_id', 'Anticipos del Empleado', readonly=True),
       'cuenta_id': fields.many2one('account.account', 'Cuenta', required=True, help="El empleado debe tener una cuenta para su nómina."),
-      'metodo_pago': fields.selection((('banco', 'Banco'),                                  
-                                  ('caja', 'Caja')), 'Método de pago', readonly=False, select="1"),
+      
     }
     _defaults = {
         'cuenta_id': lambda * a: 377 or None,
@@ -107,20 +106,25 @@ class hr_nomina(osv.osv):
     _description = 'Nominas de Empleados'
     _columns = {
        'name': fields.char('Nómina', size=20),
-       'employee_id': fields.many2one('hr.employee', 'Empleado', required=True, select="1"),
-       'retribucion_bruta': fields.float('Retribución Bruta', digits=(16, 2)),
-       'ss_empresa': fields.float('S.S a Cargo de la empresa', digits=(16, 2)),
-       'ss_trabajador': fields.float('S.S a cargo del Trabajador', digits=(16, 2)),
-       'irpf': fields.float('Retención IRPF (%)', digits=(16, 2)),
+       'employee_id': fields.many2one('hr.employee', 'Empleado', required=True, select="1"),          
+       'retribucion_bruta': fields.related('employee_id','retribucion_bruta',type="float",relation="hr.employee",string="Retribución Bruta",store=False),
+       'ss_empresa': fields.related('employee_id','ss_empresa',type="float",relation="hr.employee",string="S.S a Cargo de la empresa",store=False),
+       'ss_trabajador': fields.related('employee_id','ss_trabajador',type="float",relation="hr.employee",string="S.S a cargo del Trabajador",store=False),
+       'irpf': fields.related('employee_id','irpf',type="float",relation="hr.employee",string="Retención IRPF (%)",store=False),
        'fecha_nomina': fields.date('Fecha de la Nómina', select="1"),
        'state': fields.selection((('borrador', 'Borrador'),
                                   ('confirmada', 'Confirmada'),
+                                  ('parcial', 'Parcialmente pagada'),
                                   ('pagada', 'Pagada'),
                                   ('cancelada', 'Cancelada')), 'Estado Nómina', readonly=True, select="1"),
        'numero': fields.char('Número de nomina', size=32, readonly=True, help="Número único de nómina, se asigna automáticamente cuando se crea la nómina", select="1"),
        'extra': fields.boolean('Paga Extra'),
        'asiento_nomina_confirmada': fields.many2one('account.move', 'Asiento Nómina confirmada', readonly=True),
        'asiento_nomina_pagada': fields.many2one('account.move', 'Asiento Nómina pagada', readonly=True),
+       'cantidad_pagada': fields.float('Cantidad abonada', digits=(16, 2)),
+       'pago': fields.float('Pago parcial de nómina', digits=(16, 2)),
+       'metodo_pago': fields.selection([('banco', 'Banco'),                                  
+                                  ('caja', 'Caja')], 'Método de pago', readonly=False, select="1"),
        
     }
 
@@ -312,53 +316,67 @@ class hr_nomina(osv.osv):
 
             retencion_irpf = (nom.retribucion_bruta * nom.irpf) / 100
             sueldo_neto = nom.retribucion_bruta - retencion_irpf - nom.ss_trabajador
+            total_ingreso = sueldo_neto            
             anticipo = self.comprueba_anticipo(cr, uid, ids, fechaNomina, nom.employee_id.id)
-            pdb.set_trace()
             if anticipo and nom.extra == False:
                 sueldo_neto -= anticipo
+            # Antes de procesar el pago comprobamos que quede nómina por pagar.
+            if nom.cantidad_pagada <= total_ingreso:            
+                sueldo_neto -= nom.pago
+                if nom.cantidad_pagada + nom.pago <= sueldo_neto:
+                    nom.cantidad_pagada += nom.pago
+                    
+                    if nom.metodo_pago == "banco":
+                    
+                        cuenta_banco = {
+                               'account_id': cuentas['cuenta_bancos'], 
+                               'move_id': move_id, 
+                               'journal_id': journal_id, 
+                               'period_id': periodo_id, 
+                               'name': 'Banco', 
+                               'credit': sueldo_neto, 
+                               'ref': referencia,
+                               }
+                        account_move_line_obj.create(cr, uid, cuenta_banco)
 
-                
-            if nom.employee_id.metodo_pago == "banco":
+                    else:
+
+                        cuenta_caja = {
+                               'account_id': cuentas['cuenta_caja'], 
+                               'move_id': move_id, 
+                               'journal_id': journal_id, 
+                               'period_id': periodo_id, 
+                               'name': 'Caja', 
+                               'credit': sueldo_neto, 
+                               'ref': referencia,
+                               }
+                        account_move_line_obj.create(cr, uid, cuenta_caja)
+
+                    
+                    cuenta_pendiente = {
+                                      'account_id': cuentas['cuenta_pendientes_pago'], 
+                                      'move_id': move_id, 
+                                      'journal_id': journal_id, 
+                                      'period_id': periodo_id, 
+                                      'name': 'Renumeraciones pendientes', 
+                                      'debit': sueldo_neto, 
+                                      'ref': referencia,  
+                                    }
+                    account_move_line_obj.create(cr, uid, cuenta_pendiente)
+
+                    if nom.cantidad_pagada == total_ingreso:
+                        self.write(cr, uid, ids, {'state': 'pagada', 'asiento_nomina_pagada':move_id})
+                        account_move_obj.write(cr, uid, [move_id], {'date': fechaNomina})
+                        account_move_obj.post(cr, uid, [move_id])
+                    
+                    if nom.cantidad_pagada <= total_ingreso:
+                        nom.state = 'parcial'
             
-                cuenta_banco = {
-                       'account_id': cuentas['cuenta_bancos'], 
-                       'move_id': move_id, 
-                       'journal_id': journal_id, 
-                       'period_id': periodo_id, 
-                       'name': 'Banco', 
-                       'credit': sueldo_neto, 
-                       'ref': referencia,
-                       }
-                account_move_line_obj.create(cr, uid, cuenta_banco)
-
+                else:
+                    raise osv.except_osv(_('El pago solicitado excede el total a pagar!'))
             else:
-
-                cuenta_caja = {
-                       'account_id': cuentas['cuenta_caja'], 
-                       'move_id': move_id, 
-                       'journal_id': journal_id, 
-                       'period_id': periodo_id, 
-                       'name': 'Caja', 
-                       'credit': sueldo_neto, 
-                       'ref': referencia,
-                       }
-                account_move_line_obj.create(cr, uid, cuenta_caja)
-
-            
-            cuenta_pendiente = {
-                              'account_id': cuentas['cuenta_pendientes_pago'], 
-                              'move_id': move_id, 
-                              'journal_id': journal_id, 
-                              'period_id': periodo_id, 
-                              'name': 'Renumeraciones pendientes', 
-                              'debit': sueldo_neto, 
-                              'ref': referencia,  
-                            }
-            account_move_line_obj.create(cr, uid, cuenta_pendiente)
-
-            self.write(cr, uid, ids, {'state': 'pagada', 'asiento_nomina_pagada':move_id})
-            account_move_obj.write(cr, uid, [move_id], {'date': fechaNomina})
-            account_move_obj.post(cr, uid, [move_id])
+                raise osv.except_osv(_('Esta nómina ya ha sido pagada por completo!'))
+        
         return True
 
     def cancelar_nomina(self, cr, uid, ids, *args):
