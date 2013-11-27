@@ -16,8 +16,7 @@
 									<field name="retribucion_bruta"/>
 									<field name="irpf"/>
 									<field name="ss_empresa"/>
-									<field name="ss_trabajador"/>
-									<field name="metodo_pago"/>									
+									<field name="ss_trabajador"/>																
 								</group>
 							</page>
 							<page string="Pagas Extra">
@@ -53,6 +52,9 @@
 					<notebook colspan="4">
 						<page string="Nómina">
 							<field name="retribucion_bruta" attrs="{'readonly':[('state','!=','borrador')]}"/>
+							<field name="sueldo_neto" attrs="{'readonly':[('state','!=','borrador')]}"/>
+							<field name="cantidad_pagada" attrs="{'readonly':[('state','!=','borrador')]}"/>
+							<field name="pendiente" attrs="{'readonly':[('state','!=','borrador')]}"/>
 							<field name="irpf" attrs="{'readonly':[('state','!=','borrador')]}"/>
 							<field name="ss_empresa" attrs="{'readonly':[('state','!=','borrador')]}"/>
 							<field name="ss_trabajador" attrs="{'readonly':[('state','!=','borrador')]}"/>
@@ -64,7 +66,7 @@
 					<newline/>
 					<button name="confirmar_nomina" string="Confirmar Nómina" type="object" states="borrador" colspan="4"/>
 					<button name="cancelar_nomina" string="Cancelar" type="object" states="confirmada" colspan="2"/>
-					<button name="pagar_nomina" string="Pagar Nómina" type="object" states="confirmada" colspan="2"/>
+					<button name="formulario_pago" string="Pagar Nómina" type="object" states="confirmada,parcial" colspan="2"/>
 				</form>
 			</field>
 		</record>
@@ -98,15 +100,21 @@
 		                        string="Amount to pay"
 		                        widget='monetary'
 		                        readonly="1" />
+		                    <field name="sueldo_neto" widget="monetary" readonly="1" />
 		                    <field name="cantidad_pagada" widget="monetary" readonly="1" />
-		                    <field name="pago" widget="monetary" />
-		                    <field name="metodo_pago"/>
+		                    <field name="pendiente" widget="monetary" readonly="1" />
 		                </group>
 		                
 		                <group>
 		                    <field name="fecha_nomina"/>
 		                    <field name="numero"/>                    
 		                </group>
+
+		                <group>
+		                	<field name="pago" widget="monetary" />
+		                    <field name="metodo_pago"/>
+		                </group>
+
 		            </group>            
 		            
 		            <footer>

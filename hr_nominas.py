@@ -102,6 +102,13 @@ class hr_employee(osv.osv):
 hr_employee()
 
 class hr_nomina(osv.osv):
+    
+    def obtener_salario_neto(self, cr, uid, ids, fields, arg, context):
+        fields={}
+        for record in self.browse(cr, uid, ids):
+            fields[record.id]= record.retribucion_bruta- ((record.retribucion_bruta * record.irpf) / 100) - record.ss_trabajador
+        return fields
+
     _name = 'hr.nomina'
     _description = 'Nominas de Empleados'
     _columns = {
@@ -125,12 +132,17 @@ class hr_nomina(osv.osv):
        'pago': fields.float('Pago parcial de nómina', digits=(16, 2)),
        'metodo_pago': fields.selection([('banco', 'Banco'),                                  
                                   ('caja', 'Caja')], 'Método de pago', readonly=False, select="1"),
+       'pendiente': fields.float('Pago pendiente', digits=(16, 2)),
+       'sueldo_neto': fields.function(obtener_salario_neto, method=True, string='Sueldo Neto',type='float'),
+       'numero_pago': fields.integer('Número de pago')
        
     }
 
     _defaults = {
         'state': lambda * a:'borrador',
+        'numero_pago': 1,
     }
+
 
     def comprueba_mes(self, fecha_anticipo, fecha_nomina):
         anticipo = time.strptime(fecha_anticipo, '%Y-%m-%d')
@@ -285,6 +297,35 @@ class hr_nomina(osv.osv):
             self.write(cr, uid, ids, {'state': 'confirmada', 'asiento_nomina_confirmada': move_id})
         return True
 
+    def formulario_pago(self, cr, uid, ids, context=None):
+        if not ids: return []
+        
+        dummy, view_id = self.pool.get('ir.model.data').get_object_reference(cr, uid, 'l10n_es_hr_nominas', 'paga_nominas_form_view')
+
+        nomina = self.browse(cr, uid, ids[0], context=context)
+        return {
+            'name':_("Payroll"),
+            'view_mode': 'form',
+            'view_id': view_id,
+            'view_type': 'form',
+            'res_model': 'hr.nomina',
+            'type': 'ir.actions.act_window',
+            'nodestroy': True,
+            'target': 'new',
+            'domain': '[]',
+            'res_id': nomina.id,
+            'value': {
+                'state': nomina.state,
+                'employee_id': nomina.employee_id.id,
+                'retribución_bruta': nomina.retribucion_bruta,
+                'cantidad_pagada': nomina.cantidad_pagada,
+                'pago': nomina.pago,
+                'metodo_pago': nomina.metodo_pago,
+                'fecha_nomina': nomina.fecha_nomina,
+                'numero': nomina.numero                
+            }
+        }
+
     def pagar_nomina(self, cr, uid, ids, *args):
         ##################################################################
         # OBJETOS
@@ -296,7 +337,7 @@ class hr_nomina(osv.osv):
         ##################################################################
         cuentas = get_configuration(cr, uid, ids)
         for nom in self.browse(cr, uid, ids):
-            if nom.state != 'confirmada':
+            if nom.state != 'confirmada' or nom.state != 'parcial':
                 continue
             journal_id = cuentas['diario_destino']
             journal = account_journal_obj.browse(cr, uid, journal_id)
@@ -307,25 +348,30 @@ class hr_nomina(osv.osv):
             if len(period_ids):
                 periodo_id = period_ids[0]
 
-            referencia = nom.numero + ' : Pago ' + nom.employee_id.name + ' - ' + fechaNomina
+            referencia = nom.numero + ' : Pago ' + nom.employee_id.name + ' - ' + fechaNomina + ' - ' + str(nom.numero_pago)
             if nom.extra:
-                referencia = "Pago de Paga Extra: " + nom.employee_id.name + ' - ' + fechaNomina
+                referencia = "Pago de Paga Extra: " + nom.employee_id.name + ' - ' + fechaNomina + ' - ' + str(nom.numero_pago)
             move = {'ref': referencia, 'journal_id': journal_id, 'date': fechaNomina, 'period_id': periodo_id}
 
             move_id = account_move_obj.create(cr, uid, move)
 
             retencion_irpf = (nom.retribucion_bruta * nom.irpf) / 100
-            sueldo_neto = nom.retribucion_bruta - retencion_irpf - nom.ss_trabajador
-            total_ingreso = sueldo_neto            
+            #nom.sueldo_neto = nom.retribucion_bruta - retencion_irpf - nom.ss_trabajador
             anticipo = self.comprueba_anticipo(cr, uid, ids, fechaNomina, nom.employee_id.id)
             if anticipo and nom.extra == False:
-                sueldo_neto -= anticipo
+                nom.sueldo_neto -= anticipo
             # Antes de procesar el pago comprobamos que quede nómina por pagar.
-            if nom.cantidad_pagada <= total_ingreso:            
-                sueldo_neto -= nom.pago
-                if nom.cantidad_pagada + nom.pago <= sueldo_neto:
+            pdb.set_trace()
+            nom.pendiente = nom.sueldo_neto - nom.cantidad_pagada
+            # Antes de procesar el pago comprobamos que quede nómina por pagar.           
+
+            if nom.pendiente >= 0:            
+
+                # Comprobamos que no se exceda el pago
+                if nom.cantidad_pagada + nom.pago < nom.sueldo_neto:
+
                     nom.cantidad_pagada += nom.pago
-                    
+
                     if nom.metodo_pago == "banco":
                     
                         cuenta_banco = {
@@ -334,7 +380,7 @@ class hr_nomina(osv.osv):
                                'journal_id': journal_id, 
                                'period_id': periodo_id, 
                                'name': 'Banco', 
-                               'credit': sueldo_neto, 
+                               'credit': nom.pago, 
                                'ref': referencia,
                                }
                         account_move_line_obj.create(cr, uid, cuenta_banco)
@@ -347,7 +393,7 @@ class hr_nomina(osv.osv):
                                'journal_id': journal_id, 
                                'period_id': periodo_id, 
                                'name': 'Caja', 
-                               'credit': sueldo_neto, 
+                               'credit': nom.pago, 
                                'ref': referencia,
                                }
                         account_move_line_obj.create(cr, uid, cuenta_caja)
@@ -359,23 +405,29 @@ class hr_nomina(osv.osv):
                                       'journal_id': journal_id, 
                                       'period_id': periodo_id, 
                                       'name': 'Renumeraciones pendientes', 
-                                      'debit': sueldo_neto, 
+                                      'debit': nom.pago, 
                                       'ref': referencia,  
                                     }
                     account_move_line_obj.create(cr, uid, cuenta_pendiente)
 
-                    if nom.cantidad_pagada == total_ingreso:
-                        self.write(cr, uid, ids, {'state': 'pagada', 'asiento_nomina_pagada':move_id})
+                    nom.pendiente -= nom.pago
+                    nom.numero_pago += 1
+
+                    if nom.cantidad_pagada == nom.sueldo_neto:
+                        self.write(cr, uid, ids, {'state': 'pagada', 'asiento_nomina_pagada':move_id, 'cantidad_pagada': nom.cantidad_pagada, 'pendiente': nom.pendiente})
                         account_move_obj.write(cr, uid, [move_id], {'date': fechaNomina})
                         account_move_obj.post(cr, uid, [move_id])
-                    
-                    if nom.cantidad_pagada <= total_ingreso:
-                        nom.state = 'parcial'
+
+                    if nom.cantidad_pagada <= nom.sueldo_neto:
+                        self.write(cr, uid, ids, {'state': 'parcial', 'asiento_nomina_pagada':move_id, 'cantidad_pagada': nom.cantidad_pagada, 'pendiente': nom.pendiente})
+                        account_move_obj.write(cr, uid, [move_id], {'date': fechaNomina})
+                        account_move_obj.post(cr, uid, [move_id])                  
             
                 else:
-                    raise osv.except_osv(_('El pago solicitado excede el total a pagar!'))
+                    raise osv.except_osv(_('¡El pago solicitado excede el total a pagar!'))
+            
             else:
-                raise osv.except_osv(_('Esta nómina ya ha sido pagada por completo!'))
+                raise osv.except_osv(_('¡Esta nómina ya ha sido pagada por completo!'))
         
         return True
 
