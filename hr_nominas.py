@@ -337,8 +337,8 @@ class hr_nomina(osv.osv):
         ##################################################################
         cuentas = get_configuration(cr, uid, ids)
         for nom in self.browse(cr, uid, ids):
-            if nom.state != 'confirmada' or nom.state != 'parcial':
-                continue
+            #if nom.state != 'confirmada' or nom.state != 'parcial':
+            #    continue
             journal_id = cuentas['diario_destino']
             journal = account_journal_obj.browse(cr, uid, journal_id)
             fechaNomina = nom.fecha_nomina
@@ -361,14 +361,15 @@ class hr_nomina(osv.osv):
             if anticipo and nom.extra == False:
                 nom.sueldo_neto -= anticipo
             # Antes de procesar el pago comprobamos que quede nómina por pagar.
-            pdb.set_trace()
+            
             nom.pendiente = nom.sueldo_neto - nom.cantidad_pagada
             # Antes de procesar el pago comprobamos que quede nómina por pagar.           
 
-            if nom.pendiente >= 0:            
+            if nom.pendiente > 0:            
 
                 # Comprobamos que no se exceda el pago
-                if nom.cantidad_pagada + nom.pago < nom.sueldo_neto:
+                pdb.set_trace()
+                if round(nom.cantidad_pagada,2) + round(nom.pago,2) <= round(nom.sueldo_neto,2):
 
                     nom.cantidad_pagada += nom.pago
 
@@ -414,20 +415,21 @@ class hr_nomina(osv.osv):
                     nom.numero_pago += 1
 
                     if nom.cantidad_pagada == nom.sueldo_neto:
-                        self.write(cr, uid, ids, {'state': 'pagada', 'asiento_nomina_pagada':move_id, 'cantidad_pagada': nom.cantidad_pagada, 'pendiente': nom.pendiente})
+                        self.write(cr, uid, ids, {'state': 'pagada', 'asiento_nomina_pagada':move_id, 'cantidad_pagada': nom.cantidad_pagada, 'pendiente': nom.pendiente, 'numero_pago': nom.numero_pago})
                         account_move_obj.write(cr, uid, [move_id], {'date': fechaNomina})
                         account_move_obj.post(cr, uid, [move_id])
 
-                    if nom.cantidad_pagada <= nom.sueldo_neto:
-                        self.write(cr, uid, ids, {'state': 'parcial', 'asiento_nomina_pagada':move_id, 'cantidad_pagada': nom.cantidad_pagada, 'pendiente': nom.pendiente})
+                    if nom.cantidad_pagada < nom.sueldo_neto:
+                        self.write(cr, uid, ids, {'state': 'parcial', 'asiento_nomina_pagada':move_id, 'cantidad_pagada': nom.cantidad_pagada, 'pendiente': nom.pendiente, 'numero_pago': nom.numero_pago})
                         account_move_obj.write(cr, uid, [move_id], {'date': fechaNomina})
                         account_move_obj.post(cr, uid, [move_id])                  
             
                 else:
-                    raise osv.except_osv(_('¡El pago solicitado excede el total a pagar!'))
+                    raise osv.except_osv(_('Error'),_('¡El pago solicitado excede el total a pagar!'))
             
             else:
-                raise osv.except_osv(_('¡Esta nómina ya ha sido pagada por completo!'))
+                raise osv.except_osv(_('Error'),_('¡Esta nómina ya ha sido pagada por completo!'))
+                
         
         return True
 

@@ -51,10 +51,7 @@
 					<field name="extra" readonly="1"/>
 					<notebook colspan="4">
 						<page string="Nómina">
-							<field name="retribucion_bruta" attrs="{'readonly':[('state','!=','borrador')]}"/>
-							<field name="sueldo_neto" attrs="{'readonly':[('state','!=','borrador')]}"/>
-							<field name="cantidad_pagada" attrs="{'readonly':[('state','!=','borrador')]}"/>
-							<field name="pendiente" attrs="{'readonly':[('state','!=','borrador')]}"/>
+							<field name="retribucion_bruta" attrs="{'readonly':[('state','!=','borrador')]}"/>							
 							<field name="irpf" attrs="{'readonly':[('state','!=','borrador')]}"/>
 							<field name="ss_empresa" attrs="{'readonly':[('state','!=','borrador')]}"/>
 							<field name="ss_trabajador" attrs="{'readonly':[('state','!=','borrador')]}"/>
@@ -62,11 +59,23 @@
 							<field name="asiento_nomina_pagada"/>
 						</page>
 					</notebook>
-					<field name="state" colspan="4"/>
-					<newline/>
-					<button name="confirmar_nomina" string="Confirmar Nómina" type="object" states="borrador" colspan="4"/>
-					<button name="cancelar_nomina" string="Cancelar" type="object" states="confirmada" colspan="2"/>
-					<button name="formulario_pago" string="Pagar Nómina" type="object" states="confirmada,parcial" colspan="2"/>
+					<notebook colspan="4">
+						<page string="Pagos">
+							<field name="retribucion_bruta" attrs="{'readonly':[('state','!=','borrador')]}"/>
+							<field name="sueldo_neto" attrs="{'readonly':[('state','!=','borrador')]}"/>
+							<field name="cantidad_pagada" attrs="{'readonly':[('state','!=','borrador')]}"/>
+							<field name="pendiente" attrs="{'readonly':[('state','!=','borrador')]}"/>							
+						</page>
+					</notebook>
+					<notebook colspan="4">
+						<page string="Acciones">
+							<field name="state" colspan="4"/>
+							<newline/>
+							<button name="confirmar_nomina" string="Confirmar Nómina" type="object" states="borrador" colspan="4"/>
+							<button name="cancelar_nomina" string="Cancelar" type="object" states="confirmada" colspan="2"/>
+							<button name="formulario_pago" string="Pagar Nómina" type="object" states="confirmada,parcial" colspan="2"/>
+						</page>
+					</notebook>
 				</form>
 			</field>
 		</record>
@@ -79,6 +88,7 @@
 				<tree string="Nóminas">
 					<field name="fecha_nomina"/>
 					<field name="employee_id"/>
+					<field name="cantidad_pagada"/>					
 					<field name="numero"/>
 					<field name="extra"/>
 					<field name="retribucion_bruta"/>
@@ -94,20 +104,17 @@
 		        <form string="Payment" version="7.0">
 		            <group>
 		                <group>
-		                    <field name="state"/>
+		                    <field name="state" readonly="1"/>
 		                    <field name="employee_id" required="1" string="Customer" /> 
-		                    <field name="retribucion_bruta" class="oe_inline"
-		                        string="Amount to pay"
-		                        widget='monetary'
-		                        readonly="1" />
+		                    <field name="retribucion_bruta" class="oe_inline" string="Salario Bruto" widget='monetary' readonly="1" />
 		                    <field name="sueldo_neto" widget="monetary" readonly="1" />
 		                    <field name="cantidad_pagada" widget="monetary" readonly="1" />
 		                    <field name="pendiente" widget="monetary" readonly="1" />
 		                </group>
 		                
 		                <group>
-		                    <field name="fecha_nomina"/>
-		                    <field name="numero"/>                    
+		                    <field name="fecha_nomina" readonly="1"/>
+		                    <field name="numero" readonly="1"/>                    
 		                </group>
 
 		                <group>
