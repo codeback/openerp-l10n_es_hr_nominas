@@ -367,8 +367,7 @@ class hr_nomina(osv.osv):
 
             if nom.pendiente > 0:            
 
-                # Comprobamos que no se exceda el pago
-                pdb.set_trace()
+                # Comprobamos que no se exceda el pago                
                 if round(nom.cantidad_pagada,2) + round(nom.pago,2) <= round(nom.sueldo_neto,2):
 
                     nom.cantidad_pagada += nom.pago

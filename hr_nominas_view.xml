@@ -60,11 +60,9 @@
 						</page>
 					</notebook>
 					<notebook colspan="4">
-						<page string="Pagos">
-							<field name="retribucion_bruta" attrs="{'readonly':[('state','!=','borrador')]}"/>
+						<page string="Pagos">							
 							<field name="sueldo_neto" attrs="{'readonly':[('state','!=','borrador')]}"/>
-							<field name="cantidad_pagada" attrs="{'readonly':[('state','!=','borrador')]}"/>
-							<field name="pendiente" attrs="{'readonly':[('state','!=','borrador')]}"/>							
+							<field name="cantidad_pagada" attrs="{'readonly':[('state','!=','borrador')]}"/>		
 						</page>
 					</notebook>
 					<notebook colspan="4">
@@ -105,7 +103,7 @@
 		            <group>
 		                <group>
 		                    <field name="state" readonly="1"/>
-		                    <field name="employee_id" required="1" string="Customer" /> 
+		                    <field name="employee_id" required="1" string="Customer" readonly="1"/> 
 		                    <field name="retribucion_bruta" class="oe_inline" string="Salario Bruto" widget='monetary' readonly="1" />
 		                    <field name="sueldo_neto" widget="monetary" readonly="1" />
 		                    <field name="cantidad_pagada" widget="monetary" readonly="1" />
@@ -130,18 +128,8 @@
 		            </footer>
 		        </form>
 		    </field>
-		</record>                 
+		</record>               
      	
-		<record id="act_paga_nominas" model="ir.actions.act_window">
-			<field name="name">Pagar Nóminas</field>
-			<field name="type">ir.actions.act_window</field>
-			<field name="view_id" ref="paga_nominas_form_view"/>
-			<field name="res_model">hr.nomina</field>
-			<field name="view_type">form</field>
-			<field name="view_mode">form</field>
-			<field name="target">new</field>
-		</record>	
-			
 		<record id="view_nomina_search" model="ir.ui.view">
 			<field name="name">hr.nomina.search</field>
 			<field name="model">hr.nomina</field>
@@ -282,9 +270,6 @@
 
 		<!--Anticipos-->
 		<menuitem id="menu_ver_anticipos" parent="menu_nomina" action="view_anticipo_action"/>
-
-		<!--Pagos-->
-		<menuitem id="menu_paga_nominas" parent="menu_nomina" action="act_paga_nominas"/>
 
 	</data>
 </openerp>

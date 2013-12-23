@@ -109,7 +109,6 @@ class wizard_crea_extras(osv.osv_memory):
                   'irpf': empleado.irpf_extra, 
                   'extra': True
                   }
-            pdb.set_trace()
             extras = self.pool.get('hr.nomina').create(cr, uid, val)
         return {'type': 'ir.actions.act_window_close'} 
     
