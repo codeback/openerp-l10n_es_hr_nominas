@@ -37,14 +37,14 @@ class res_company(osv.osv):
     _name = 'res.company'
     _inherit = 'res.company'
     _columns = {
-        'diario_destino': fields.many2one('account.journal', 'Diario de Destino', required=True),         
-        'cuenta_ss_empresa': fields.many2one('account.account', 'Cuenta Seguridad Social a cargo de la empresa', required=True),
-        'cuenta_ss_acreedores': fields.many2one('account.account', 'Cuenta Organismos de la S.S acreedores', required=True),
-        'cuenta_hacienda_publica': fields.many2one('account.account', 'Cuenta H.P acreedor por retenciones practicadas', required=True),
-        'cuenta_pendientes_pago': fields.many2one('account.account', 'Cuenta Remuneraciones pendientes de pago', required=True),
-        'cuenta_bancos': fields.many2one('account.account', 'Cuenta Bancos e instituciones de crédito', required=True),
-        'cuenta_caja': fields.many2one('account.account', 'Cuenta Caja', required=True),
-        'cuenta_anticipos': fields.many2one('account.account', 'Cuenta anticipos de remuneraciones', required=True),
+        'diario_destino': fields.many2one('account.journal', 'Diario de Destino'),         
+        'cuenta_ss_empresa': fields.many2one('account.account', 'Cuenta Seguridad Social a cargo de la empresa'),
+        'cuenta_ss_acreedores': fields.many2one('account.account', 'Cuenta Organismos de la S.S acreedores'),
+        'cuenta_hacienda_publica': fields.many2one('account.account', 'Cuenta H.P acreedor por retenciones practicadas'),
+        'cuenta_pendientes_pago': fields.many2one('account.account', 'Cuenta Remuneraciones pendientes de pago'),
+        'cuenta_bancos': fields.many2one('account.account', 'Cuenta Bancos e instituciones de crédito'),
+        'cuenta_caja': fields.many2one('account.account', 'Cuenta Caja'),
+        'cuenta_anticipos': fields.many2one('account.account', 'Cuenta anticipos de remuneraciones'),
             }
 
 res_company()
