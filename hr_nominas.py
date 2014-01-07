@@ -37,15 +37,25 @@ class res_company(osv.osv):
     _name = 'res.company'
     _inherit = 'res.company'
     _columns = {
-        'diario_destino': fields.many2one('account.journal', 'Diario de Destino'),         
-        'cuenta_ss_empresa': fields.many2one('account.account', 'Cuenta Seguridad Social a cargo de la empresa'),
-        'cuenta_ss_acreedores': fields.many2one('account.account', 'Cuenta Organismos de la S.S acreedores'),
-        'cuenta_hacienda_publica': fields.many2one('account.account', 'Cuenta H.P acreedor por retenciones practicadas'),
-        'cuenta_pendientes_pago': fields.many2one('account.account', 'Cuenta Remuneraciones pendientes de pago'),
-        'cuenta_bancos': fields.many2one('account.account', 'Cuenta Bancos e instituciones de crédito'),
-        'cuenta_caja': fields.many2one('account.account', 'Cuenta Caja'),
-        'cuenta_anticipos': fields.many2one('account.account', 'Cuenta anticipos de remuneraciones'),
+        'diario_destino': fields.many2one('account.journal', 'Diario de Destino', required=False),         
+        'cuenta_ss_empresa': fields.many2one('account.account', 'Cuenta Seguridad Social a cargo de la empresa', required=False),
+        'cuenta_ss_acreedores': fields.many2one('account.account', 'Cuenta Organismos de la S.S acreedores', required=False),
+        'cuenta_hacienda_publica': fields.many2one('account.account', 'Cuenta H.P acreedor por retenciones practicadas', required=False),
+        'cuenta_pendientes_pago': fields.many2one('account.account', 'Cuenta Remuneraciones pendientes de pago', required=False),
+        'cuenta_bancos': fields.many2one('account.account', 'Cuenta Bancos e instituciones de crédito', required=False),
+        'cuenta_caja': fields.many2one('account.account', 'Cuenta Caja', required=False),
+        'cuenta_anticipos': fields.many2one('account.account', 'Cuenta anticipos de remuneraciones', required=False),
             }
+    _defaults = {
+        'diario_destino': 0,
+        'cuenta_ss_empresa': 0,
+        'cuenta_ss_acreedores': 0,
+        'cuenta_hacienda_publica': 0,
+        'cuenta_pendientes_pago': 0,
+        'cuenta_bancos': 0,
+        'cuenta_caja': 0,
+        'cuenta_anticipos': 0,       
+    }
 
 res_company()
 
@@ -106,7 +116,8 @@ class hr_nomina(osv.osv):
     def obtener_salario_neto(self, cr, uid, ids, fields, arg, context):
         fields={}
         for record in self.browse(cr, uid, ids):
-            fields[record.id]= record.retribucion_bruta- ((record.retribucion_bruta * record.irpf) / 100) - record.ss_trabajador
+            sueldo_neto = record.retribucion_bruta- ((record.retribucion_bruta * record.irpf) / 100) - record.ss_trabajador
+            fields[record.id] = round(sueldo_neto,2)
         return fields
 
     _name = 'hr.nomina'
@@ -214,7 +225,8 @@ class hr_nomina(osv.osv):
             retencion_irpf = (nom.retribucion_bruta * nom.irpf) / 100
             anticipo = self.comprueba_anticipo(cr, uid, ids, fechaNomina, nom.employee_id.id)
 
-            sueldo_neto = nom.retribucion_bruta - retencion_irpf - nom.ss_trabajador
+            #sueldo_neto = nom.retribucion_bruta - retencion_irpf - nom.ss_trabajador
+	    sueldo_neto = nom.sueldo_neto	
             if anticipo and nom.extra == False:
                 sueldo_neto -= anticipo
                 val ={
@@ -364,8 +376,8 @@ class hr_nomina(osv.osv):
             
             nom.pendiente = nom.sueldo_neto - nom.cantidad_pagada
             # Antes de procesar el pago comprobamos que quede nómina por pagar.           
-
-            if nom.pendiente > 0:            
+               
+            if round(nom.pendiente,2) > 0:            
 
                 # Comprobamos que no se exceda el pago                
                 if round(nom.cantidad_pagada,2) + round(nom.pago,2) <= round(nom.sueldo_neto,2):
