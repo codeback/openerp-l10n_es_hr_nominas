@@ -113,12 +113,14 @@ hr_employee()
 
 class hr_nomina(osv.osv):
     
+    '''
     def obtener_salario_neto(self, cr, uid, ids, fields, arg, context):
         fields={}
         for record in self.browse(cr, uid, ids):
             sueldo_neto = record.retribucion_bruta- ((record.retribucion_bruta * record.irpf) / 100) - record.ss_trabajador
             fields[record.id] = round(sueldo_neto,2)
         return fields
+    '''
 
     _name = 'hr.nomina'
     _description = 'Nominas de Empleados'
@@ -126,6 +128,7 @@ class hr_nomina(osv.osv):
        'name': fields.char('Nómina', size=20),
        'employee_id': fields.many2one('hr.employee', 'Empleado', required=True, select="1"),          
        'retribucion_bruta': fields.related('employee_id','retribucion_bruta',type="float",relation="hr.employee",string="Retribución Bruta",store=False),
+       'retribucion_bruta_aplicada': fields.float('Retribución bruta aplicada', digits=(16, 2)),
        'ss_empresa': fields.related('employee_id','ss_empresa',type="float",relation="hr.employee",string="S.S a Cargo de la empresa",store=False),
        'ss_trabajador': fields.related('employee_id','ss_trabajador',type="float",relation="hr.employee",string="S.S a cargo del Trabajador",store=False),
        'irpf': fields.related('employee_id','irpf',type="float",relation="hr.employee",string="Retención IRPF (%)",store=False),
@@ -144,7 +147,8 @@ class hr_nomina(osv.osv):
        'metodo_pago': fields.selection([('banco', 'Banco'),                                  
                                   ('caja', 'Caja')], 'Método de pago', readonly=False, select="1"),
        'pendiente': fields.float('Pago pendiente', digits=(16, 2)),
-       'sueldo_neto': fields.function(obtener_salario_neto, method=True, string='Sueldo Neto',type='float'),
+       #'sueldo_neto': fields.function(obtener_salario_neto, method=True, string='Sueldo Neto',type='float'),
+       'sueldo_neto': fields.float('Sueldo Neto', digits=(16, 2)),
        'numero_pago': fields.integer('Número de pago')
        
     }
@@ -225,8 +229,8 @@ class hr_nomina(osv.osv):
             retencion_irpf = (nom.retribucion_bruta * nom.irpf) / 100
             anticipo = self.comprueba_anticipo(cr, uid, ids, fechaNomina, nom.employee_id.id)
 
-            #sueldo_neto = nom.retribucion_bruta - retencion_irpf - nom.ss_trabajador
-	    sueldo_neto = nom.sueldo_neto	
+            sueldo_neto = round((nom.retribucion_bruta- ((nom.retribucion_bruta * nom.irpf) / 100) - nom.ss_trabajador), 2)
+	    
             if anticipo and nom.extra == False:
                 sueldo_neto -= anticipo
                 val ={
@@ -306,7 +310,7 @@ class hr_nomina(osv.osv):
             account_move_obj.write(cr, uid, [move_id], {'date': fechaNomina})
             account_move_obj.post(cr, uid, [move_id])
             self.write(cr, uid, ids, {'numero': numero})
-            self.write(cr, uid, ids, {'state': 'confirmada', 'asiento_nomina_confirmada': move_id})
+            self.write(cr, uid, ids, {'state': 'confirmada', 'asiento_nomina_confirmada': move_id, 'retribucion_bruta_aplicada': nom.retribucion_bruta, 'sueldo_neto': sueldo_neto})
         return True
 
     def formulario_pago(self, cr, uid, ids, context=None):
@@ -367,7 +371,7 @@ class hr_nomina(osv.osv):
 
             move_id = account_move_obj.create(cr, uid, move)
 
-            retencion_irpf = (nom.retribucion_bruta * nom.irpf) / 100
+            retencion_irpf = (nom.retribucion_bruta_aplicada * nom.irpf) / 100
             #nom.sueldo_neto = nom.retribucion_bruta - retencion_irpf - nom.ss_trabajador
             anticipo = self.comprueba_anticipo(cr, uid, ids, fechaNomina, nom.employee_id.id)
             if anticipo and nom.extra == False:
@@ -429,6 +433,7 @@ class hr_nomina(osv.osv):
                         self.write(cr, uid, ids, {'state': 'pagada', 'asiento_nomina_pagada':move_id, 'cantidad_pagada': nom.cantidad_pagada, 'pendiente': nom.pendiente, 'numero_pago': nom.numero_pago})
                         account_move_obj.write(cr, uid, [move_id], {'date': fechaNomina})
                         account_move_obj.post(cr, uid, [move_id])
+                        # Guardamos la cantidad bruta pagada para futuras referencaias
 
                     if nom.cantidad_pagada < nom.sueldo_neto:
                         self.write(cr, uid, ids, {'state': 'parcial', 'asiento_nomina_pagada':move_id, 'cantidad_pagada': nom.cantidad_pagada, 'pendiente': nom.pendiente, 'numero_pago': nom.numero_pago})

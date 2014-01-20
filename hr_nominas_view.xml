@@ -89,7 +89,8 @@
 					<field name="cantidad_pagada"/>					
 					<field name="numero"/>
 					<field name="extra"/>
-					<field name="retribucion_bruta"/>
+					<field name="retribucion_bruta_aplicada"/>
+					<field name="retribucion_bruta" string="Retribución bruta actual"/>					
 					<field name="state"/>
 				</tree>
 			</field>
@@ -104,7 +105,7 @@
 		                <group>
 		                    <field name="state" readonly="1"/>
 		                    <field name="employee_id" required="1" string="Customer" readonly="1"/> 
-		                    <field name="retribucion_bruta" class="oe_inline" string="Salario Bruto" widget='monetary' readonly="1" />
+		                    <field name="retribucion_bruta_aplicada" class="oe_inline" string="Salario Bruto" widget='monetary' readonly="1" />
 		                    <field name="sueldo_neto" widget="monetary" readonly="1" />
 		                    <field name="cantidad_pagada" widget="monetary" readonly="1" />
 		                    <field name="pendiente" widget="monetary" readonly="1" />
