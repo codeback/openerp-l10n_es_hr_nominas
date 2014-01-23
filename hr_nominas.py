@@ -358,11 +358,7 @@ class hr_nomina(osv.osv):
             journal_id = cuentas['diario_destino']
             journal = account_journal_obj.browse(cr, uid, journal_id)
             fechaNomina = nom.fecha_nomina
-            fechaActualBarra = datetime.now().strftime('%Y/%m/%d')
             fechaActualGuion = datetime.now().strftime('%Y-%m-%d')
-            print fechaNomina
-            print fechaActualBarra
-            print fechaActualGuion
             line = {}
 
             period_ids = account_period_obj.search(cr, uid, [('date_start', '<=', fechaNomina or time.strftime('%Y-%m-%d')), ('date_stop', '>=', fechaNomina or time.strftime('%Y-%m-%d'))])
