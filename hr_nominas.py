@@ -29,7 +29,7 @@ from osv import osv
 from osv import fields
 import time
 import pdb
-import datetime
+from datetime import datetime
 import pooler
 from tools.translate import _
 
@@ -358,16 +358,21 @@ class hr_nomina(osv.osv):
             journal_id = cuentas['diario_destino']
             journal = account_journal_obj.browse(cr, uid, journal_id)
             fechaNomina = nom.fecha_nomina
+            fechaActualBarra = datetime.now().strftime('%Y/%m/%d')
+            fechaActualGuion = datetime.now().strftime('%Y-%m-%d')
+            print fechaNomina
+            print fechaActualBarra
+            print fechaActualGuion
             line = {}
 
             period_ids = account_period_obj.search(cr, uid, [('date_start', '<=', fechaNomina or time.strftime('%Y-%m-%d')), ('date_stop', '>=', fechaNomina or time.strftime('%Y-%m-%d'))])
             if len(period_ids):
                 periodo_id = period_ids[0]
 
-            referencia = nom.numero + ' : Pago ' + nom.employee_id.name + ' - ' + fechaNomina + ' - ' + str(nom.numero_pago)
+            referencia = nom.numero + ' : Pago ' + nom.employee_id.name + ' - ' + fechaActualGuion + ' - ' + str(nom.numero_pago)
             if nom.extra:
-                referencia = "Pago de Paga Extra: " + nom.employee_id.name + ' - ' + fechaNomina + ' - ' + str(nom.numero_pago)
-            move = {'ref': referencia, 'journal_id': journal_id, 'date': fechaNomina, 'period_id': periodo_id}
+                referencia = "Pago de Paga Extra: " + nom.employee_id.name + ' - ' + fechaActualGuion + ' - ' + str(nom.numero_pago)
+            move = {'ref': referencia, 'journal_id': journal_id, 'date': datetime.today(), 'period_id': periodo_id}
 
             move_id = account_move_obj.create(cr, uid, move)
 
@@ -431,13 +436,13 @@ class hr_nomina(osv.osv):
 
                     if nom.cantidad_pagada == nom.sueldo_neto:
                         self.write(cr, uid, ids, {'state': 'pagada', 'asiento_nomina_pagada':move_id, 'cantidad_pagada': nom.cantidad_pagada, 'pendiente': nom.pendiente, 'numero_pago': nom.numero_pago})
-                        account_move_obj.write(cr, uid, [move_id], {'date': fechaNomina})
+                        account_move_obj.write(cr, uid, [move_id], {'date': datetime.today()})
                         account_move_obj.post(cr, uid, [move_id])
                         # Guardamos la cantidad bruta pagada para futuras referencaias
 
                     if nom.cantidad_pagada < nom.sueldo_neto:
                         self.write(cr, uid, ids, {'state': 'parcial', 'asiento_nomina_pagada':move_id, 'cantidad_pagada': nom.cantidad_pagada, 'pendiente': nom.pendiente, 'numero_pago': nom.numero_pago})
-                        account_move_obj.write(cr, uid, [move_id], {'date': fechaNomina})
+                        account_move_obj.write(cr, uid, [move_id], {'date': datetime.today()})
                         account_move_obj.post(cr, uid, [move_id])                  
             
                 else:
